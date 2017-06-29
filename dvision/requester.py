@@ -23,8 +23,11 @@ def is_network_error(exception):
 
 
 class DVIDRequester(object):
-    def __init__(self, hostname_whitelist):
+    def __init__(self, hostname_whitelist, username='turagalab', app='turagalabapp'):
         self.whitelist = hostname_whitelist
+        self.username = username
+        self.app = app
+        self.payload = dict(app=self.app, u=self.username)
         self.session = requests.Session()
 
     @retry(wait_exponential_multiplier=100, wait_exponential_max=60000,
@@ -34,7 +37,7 @@ class DVIDRequester(object):
         with requests.Session() as session:
             adapter = HTTPAdapter(pool_connections=1, pool_maxsize=1)
             session.mount('http://', adapter)
-            response = session.get(*args, **kwargs)
+            response = session.get(*args, params=self.payload, **kwargs)
             if response.ok:
                 return response
             else:
@@ -50,7 +53,7 @@ class DVIDRequester(object):
                 any([hostname in url_arg for hostname in self.whitelist])
                 for url_arg in url_args])
         if hostname_is_ok:
-            response = self.session.post(*args, **kwargs)
+            response = self.session.post(*args, params=self.payload, **kwargs)
             if response.ok:
                 return response
             else:
